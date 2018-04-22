@@ -1,0 +1,6 @@
+[submodule "master"]
+	path = master
+	url = https://github.com/octavioHarris/pi_display_app.git
+[submodule "stable"]
+	path = stable
+	url = https://github.com/octavioHarris/pi_display_app.git
