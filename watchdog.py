@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-import master.main as master
-import stable.main as stable
+import master.app as master
+import stable.app as stable
 
 import traceback
 import ConfigParser
