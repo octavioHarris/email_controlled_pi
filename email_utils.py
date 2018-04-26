@@ -1,8 +1,14 @@
+import re
+import time
+import email
 import imaplib
 import smtplib
-import email
+
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+SEPARATOR_REGEX = '\r\n####'
+STATUS_REPORT_ADDRESS = 'harris.octavio@gmail.com'
 
 class EmailConnection():
 
@@ -39,6 +45,65 @@ class EmailConnection():
         pass
 #        self.imap_connection.close()
 #        self.smtp_connection.close()
+
+class EmailListener():
+
+    def __init__(self, connection, event_logger, poll_interval):
+        
+        self.connection = connection
+        self.event_logger = event_logger
+        self.poll_interval = poll_interval
+        self.handlers = {}
+        self.last_processed_id = None
+        self.running = False
+
+    def start(self):
+
+        self.running = True
+
+        # Only process newly received emails
+        last_processed_id = self.connection.fetch_email_ids()[-1]
+        next_read_time = time.time()
+
+        while self.running:
+            
+            last_id = self.connection.fetch_email_ids()[-1]
+           
+            # Ensure email has not been processed already
+            if last_id != last_processed_id:
+
+                last_processed_id = last_id
+ 
+                body, attachments = self.connection.fetch_email(last_id)
+                self.process_message(body, attachments)
+ 
+            # Sleep from now until next specified read time
+            next_read_time += self.poll_interval
+            time.sleep(next_read_time - time.time())
+
+    def stop(self):
+
+        self.running = False
+
+    def register_handler(self, key, handler):
+
+        self.handlers[key] = handler
+  
+    def process_message(self, body, attachments):
+
+        # Extract message type and text segments
+        parts = re.split(SEPARATOR_REGEX, body)
+        parts = map(str.strip, parts)
+        message_type = parts[0].strip()
+        text_segments = parts[1::]
+ 
+        # Verify there is a configured handler for the specified message type
+        if message_type not in self.handlers:
+            print('Unhandled message type: ' + message_type)
+            return
+ 
+        # Call the appropriate handler
+        self.handlers[message_type](text_segments, attachments)            
 
 def smtp_connect(server, email, password):
 
