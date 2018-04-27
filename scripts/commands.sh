@@ -12,3 +12,4 @@ elif [ "$command" ==  "update-repo" ] ; then
     ./sync_repo.sh 
 else
     exit 1
+fi
