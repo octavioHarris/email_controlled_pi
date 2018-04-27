@@ -1,3 +1,4 @@
+import os
 import re
 import time
 import email
@@ -10,6 +11,35 @@ from email.mime.multipart import MIMEMultipart
 
 SEPARATOR_REGEX = '\r\n####'
 STATUS_REPORT_ADDRESS = 'harris.octavio@gmail.com'
+
+class EmailAttachment():
+
+    def __init__(self, filename, binary):
+
+        self.filename = filename
+        self.binary = binary
+
+    def save(self, directory):
+
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+
+        with open(directory + self.filename, "wb") as file:
+            file.write(self.binary)
+
+class EmailMessage():
+
+    def __init__(self, args, attachments):
+
+        self.parts = args
+        self.attachments = attachments
+
+    def save_attachments(self, directory_mapping_callback):
+
+        for attachment in self.attachments:
+
+            directory = directory_mapping_callback(attachment.filename)
+            attachment.save(directory)
 
 class EmailConnection():
 
@@ -126,7 +156,7 @@ class EmailListener():
             if handler['callback']() == False:
                 self.stop()
         else:
-            if handler['callback']({'args': args, 'attachments': attachments}) == False:
+            if handler['callback'](EmailMessage(args, attachments)) == False:
                 self.stop()
 
 def smtp_connect(server, email, password):
@@ -155,10 +185,8 @@ def parse_email(raw_email):
             
         # Found attachment 
         if filename:
-            attachments.append({
-                'filename': filename,
-                'binary': part.get_payload(decode=True) 
-            })
+            binary = part.get_payload(decode=True)
+            attachments.append(EmailAttachment(filename, binary))
             continue
 
         content_type = part.get_content_type()
