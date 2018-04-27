@@ -97,9 +97,12 @@ class EmailListener():
 
         self.running = False
 
-    def register_handler(self, key, handler):
+    def register_handler(self, key, handler, noargs=False):
 
-        self.handlers[key] = handler
+        self.handlers[key] = {
+            'callback': handler,
+            'noargs': noargs
+        }
   
     def process_message(self, body, attachments):
 
@@ -107,7 +110,7 @@ class EmailListener():
         parts = re.split(SEPARATOR_REGEX, body)
         parts = map(str.strip, parts)
         message_type = parts[0].strip()
-        text_segments = parts[1::]
+        args = parts[1::]
  
         # Verify there is a configured handler for the specified message type
         if message_type not in self.handlers:
@@ -116,10 +119,15 @@ class EmailListener():
 
         print('Calling handler: ' + message_type)
 
+        handler = self.handlers[message_type]
 
         # Call the appropriate handler and stop listener if False is returned
-        if self.handlers[message_type](text_segments, attachments) == False:
-            self.stop()
+        if handler['noargs'] == True:
+            if handler['callback']() == False:
+                self.stop()
+        else:
+            if handler['callback']({'args': args, 'attachments': attachments}) == False:
+                self.stop()
 
 def smtp_connect(server, email, password):
 
