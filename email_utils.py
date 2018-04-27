@@ -3,6 +3,7 @@ import time
 import email
 import imaplib
 import smtplib
+import threading
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -54,32 +55,43 @@ class EmailListener():
         self.event_logger = event_logger
         self.poll_interval = poll_interval
         self.handlers = {}
-        self.last_processed_id = None
         self.running = False
+ 
+        # Only process newly received emails
+        self.last_processed_id = self.connection.fetch_email_ids()[-1]
 
     def start(self):
 
-        self.running = True
+        thread = threading.Thread(target = self.mainloop)
+        thread.start()
+        return thread
+    
+    def process_latest_email(self):
 
-        # Only process newly received emails
-        last_processed_id = self.connection.fetch_email_ids()[-1]
+        # Fetch latest email
+        latest_id = self.connection.fetch_email_ids()[-1]
+       
+        # Ensure email has not been processed already
+        if latest_id != self.last_processed_id:
+
+            body, attachments = self.connection.fetch_email(latest_id)
+            self.process_message(body, attachments)
+            self.last_processed_id = latest_id
+
+    def mainloop(self, delay=time.sleep):
+
+        self.running = True
+        
         next_read_time = time.time()
 
         while self.running:
             
-            last_id = self.connection.fetch_email_ids()[-1]
-           
-            # Ensure email has not been processed already
-            if last_id != last_processed_id:
+            # Poll mailbox and process latest email
+            self.process_latest_email()
 
-                last_processed_id = last_id
- 
-                body, attachments = self.connection.fetch_email(last_id)
-                self.process_message(body, attachments)
- 
             # Sleep from now until next specified read time
             next_read_time += self.poll_interval
-            time.sleep(next_read_time - time.time())
+            delay(next_read_time - time.time())
 
     def stop(self):
 
@@ -101,9 +113,13 @@ class EmailListener():
         if message_type not in self.handlers:
             print('Unhandled message type: ' + message_type)
             return
- 
-        # Call the appropriate handler
-        self.handlers[message_type](text_segments, attachments)            
+
+        print('Calling handler: ' + message_type)
+
+
+        # Call the appropriate handler and stop listener if False is returned
+        if self.handlers[message_type](text_segments, attachments) == False:
+            self.stop()
 
 def smtp_connect(server, email, password):
 
@@ -113,6 +129,7 @@ def smtp_connect(server, email, password):
     return smtp_connection
     
 def imap_connect(server, email, password):
+    
     imap_connection = imaplib.IMAP4_SSL(server)
     imap_connection.login(email, password)
     return imap_connection

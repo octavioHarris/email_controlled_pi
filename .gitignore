@@ -1,2 +1,4 @@
 settings.ini
 *.pyc
+*.json
+*.tmp
