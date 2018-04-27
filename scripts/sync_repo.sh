@@ -1,6 +1,6 @@
 #!/bin/bash
 
-project_dir="/home/pi/projects/email_controlled_pi"
+project_dir="`pwd`"
 master_app_dir="$project_dir/master"
 stable_app_dir="$project_dir/stable"
 
