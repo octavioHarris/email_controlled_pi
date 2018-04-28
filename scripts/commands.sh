@@ -9,7 +9,7 @@ elif [ "$command" ==  "screen-on" ] ; then
 elif [ "$command" ==  "screen-off" ] ; then
     xset dpms force off
 elif [ "$command" ==  "update-repo" ] ; then
-    ./sync_repo.sh 
+    bash ./scripts/sync_repo.sh 
 else
     exit 1
 fi
