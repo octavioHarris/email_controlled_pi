@@ -40,7 +40,7 @@ def create_email_listener(connection, event_logger, config):
     # Start email listener
     return EmailListener(connection, event_logger, read_interval)
 
-def run_version(version_module, version_name, email_listener, event_logger, settings):
+def run_version(version_module, version_name, connection, listener, event_logger, settings):
  
     try:
 
@@ -49,7 +49,7 @@ def run_version(version_module, version_name, email_listener, event_logger, sett
         
         # Run the module
         event_logger.log_event('Watchdog: STARTING ' + version_name, '') 
-        version_module.run(email_listener, settings)
+        version_module.run(connection, listener, settings)
         event_logger.log_event('Watchdog: SAFELY TERMINATED ' + version_name, '')
         return True
 
@@ -70,16 +70,16 @@ def main():
     # Open the connection, create an event_logger and then an email_listener
     connection = open_email_connection(config)
     event_logger = create_event_logger(connection, config)
-    email_listener = create_email_listener(connection, event_logger, config)
+    listener = create_email_listener(connection, event_logger, config)
 
     # Send any previously logged events
     event_logger.send_email_report()
 
     # Automatically restart master version when it exits safely
-    while run_version(master, 'master', email_listener, event_logger, config): pass
+    while run_version(master, 'master', connection, listener, event_logger, config): pass
     
     # Fall back on stable version
-    run_version(stable, 'stable', email_listener, event_logger, config)
+    run_version(stable, 'stable', connection, listener, event_logger, config)
         
 if __name__ == "__main__":
     main()
