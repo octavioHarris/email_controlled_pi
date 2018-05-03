@@ -85,6 +85,7 @@ class EmailListener():
         self.event_logger = event_logger
         self.poll_interval = poll_interval
         self.handlers = {}
+        self.handler_wrapper = lambda func : func
         self.running = False
  
         # Only process newly received emails
@@ -127,10 +128,14 @@ class EmailListener():
 
         self.running = False
 
+    def set_handler_wrapper(self, wrapper):
+
+        self.handler_wrapper = wrapper
+
     def register_handler(self, key, handler, noargs=False):
 
         self.handlers[key] = {
-            'callback': handler,
+            'callback': self.handler_wrapper(handler),
             'noargs': noargs
         }
   
