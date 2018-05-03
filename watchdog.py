@@ -1,41 +1,44 @@
 #!/usr/bin/python
-
-import master.app as master
-import stable.app as stable
-
-import traceback
-import ConfigParser
+import json
+import tracebak
 
 from event_logging import EventLogger
 from email_utils import EmailConnection, EmailListener
 
-SETTINGS_FILE_PATH = 'settings.ini'
+import master.app as master
+import stable.app as stable
 
-def open_email_connection(config):
+SETTINGS_FILE_PATH = 'settings.json'
+
+def open_email_connection(settings):
    
+    connection_settings = settings['CONNECTION']
+
     # Extract connection settings
-    email       = config.get('CONNECTION', 'EMAIL')
-    password    = config.get('CONNECTION', 'PASSWORD')
-    imap_server = config.get('CONNECTION', 'IMAP_SERVER') 
-    smtp_server = config.get('CONNECTION', 'SMTP_SERVER')
-    smtp_port   = config.get('CONNECTION', 'SMTP_PORT')
+    email       = connection_settings['EMAIL']
+    password    = connection_settings['PASSWORD']
+    imap_server = connection_settings['IMAP_SERVER']
+    smtp_server = connection_settings['SMTP_SERVER']
+    smtp_port   = connection_settings['SMTP_PORT']
 
     # Open and return the email connection
     return EmailConnection(imap_server, smtp_server, email, password)
 
-def create_event_logger(connection, config):
+def create_event_logger(connection, settings):
+
+    event_logging_settings = settings['EVENT_LOGGING']
 
     # Extract event logging setings
-    event_log_file      = config.get('EVENT_LOGGING', 'EVENT_LOG_FILE')
-    event_report_email  = config.get('EVENT_LOGGING', 'EVENT_REPORT_EMAIL')
+    event_log_file      = event_logging_settings['EVENT_LOG_FILE']
+    event_report_email  = event_logging_settings['EVENT_REPORT_EMAIL']
 
     # Initialize and return the event logger
     return EventLogger(connection, event_log_file, event_report_email)
 
-def create_email_listener(connection, event_logger, config):
+def create_email_listener(connection, event_logger, settings):
  
     # Extract program settings 
-    read_interval = float(config.get('PROGRAM', 'READ_INTERVAL'))
+    read_interval = float(settings['PROGRAM']['READ_INTERVAL'])
  
     # Start email listener
     return EmailListener(connection, event_logger, read_interval)
@@ -61,16 +64,15 @@ def run_version(version_module, version_name, connection, listener, event_logger
         return False
       
 def main():
-    
-    # Read from settings.ini file
-    config = ConfigParser.ConfigParser()
-    config.optionxform=str 
-    config.read(SETTINGS_FILE_PATH) 
+   
+    # Read from settings.json file
+    with open(SETTINGS_FILE_PATH) as file:        
+        settings = json.load(file)
 
     # Open the connection, create an event_logger and then an email_listener
-    connection = open_email_connection(config)
-    event_logger = create_event_logger(connection, config)
-    listener = create_email_listener(connection, event_logger, config)
+    connection = open_email_connection(settings)
+    event_logger = create_event_logger(connection, settings)
+    listener = create_email_listener(connection, event_logger, settings)
 
     # Send any previously logged events
     event_logger.send_email_report()
