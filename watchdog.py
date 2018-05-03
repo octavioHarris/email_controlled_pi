@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import json
-import tracebak
+import traceback
 
 from event_logging import EventLogger
 from email_utils import EmailConnection, EmailListener
@@ -78,10 +78,10 @@ def main():
     event_logger.send_email_report()
 
     # Automatically restart master version when it exits safely
-    while run_version(master, 'master', connection, listener, event_logger, config): pass
+    while run_version(master, 'master', connection, listener, event_logger, settings): pass
     
     # Fall back on stable version
-    run_version(stable, 'stable', connection, listener, event_logger, config)
+    run_version(stable, 'stable', connection, listener, event_logger, settings)
         
 if __name__ == "__main__":
     main()
