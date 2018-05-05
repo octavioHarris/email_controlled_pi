@@ -1,7 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python3.5
 import json
 import traceback
 
+import importlib
 from event_logging import EventLogger
 from email_utils import EmailConnection, EmailListener
 
@@ -48,7 +49,7 @@ def run_version(version_module, version_name, connection, listener, event_logger
     try:
 
         # Reload the module 
-        version_module = reload(version_module)        
+        version_module = importlib.reload(version_module)        
         
         # Run the module
         event_logger.log_event('Watchdog: STARTING ' + version_name, '') 

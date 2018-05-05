@@ -1,5 +1,4 @@
 import os
-import re
 import time
 import email
 import imaplib
@@ -9,7 +8,7 @@ import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-SEPARATOR_REGEX = '\r\n####'
+SEPARATOR = '##'
 STATUS_REPORT_ADDRESS = 'harris.octavio@gmail.com'
 
 class EmailAttachment():
@@ -54,7 +53,7 @@ class EmailConnection():
         self.imap_connection.list()
         self.imap_connection.select("inbox")
         result, data = self.imap_connection.search(None, "ALL")
-        email_ids = data[0].split(' ')
+        email_ids = data[0].decode('utf-8').split(' ')
         return email_ids
 
     def fetch_email(self, email_id):
@@ -142,9 +141,9 @@ class EmailListener():
     def process_message(self, body, attachments):
 
         # Extract message type and text segments
-        parts = re.split(SEPARATOR_REGEX, body)
-        parts = map(str.strip, parts)
-        message_type = parts[0].strip()
+        parts = body.split(SEPARATOR)
+        parts = [part.strip() for part in parts]
+        message_type = parts[0]
         args = parts[1::]
  
         # Verify there is a configured handler for the specified message type
@@ -182,7 +181,7 @@ def parse_email(raw_email):
     body = ""
     attachments = []
     
-    message = email.message_from_string(raw_email)
+    message = email.message_from_string(raw_email.decode('utf-8'))
     
     for part in message.walk():
         
