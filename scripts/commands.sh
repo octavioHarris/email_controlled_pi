@@ -1,4 +1,4 @@
-#!/bin/bashh
+#!/bin/bash
 
 command="$1"
 
